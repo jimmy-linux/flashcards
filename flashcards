@@ -123,8 +123,8 @@ async def main():
     if len(sys.argv) >= 2 and sys.argv[1] == 'a':
         while await add_card():
             pass
-    elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
-        await get_table()
+    #elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
+        #await get_table()  # for developers. The learner doesn't want to have this function available
     else:
         cards = await get_active_cards()
         cards = await memorize(cards)
