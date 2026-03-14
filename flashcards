@@ -1,0 +1,132 @@
+#!/usr/bin/python3
+
+import aiosqlite
+import asyncio
+import time
+import click
+import sys
+
+lvl = (
+        0,                      # 0 - immediately
+        60 * 20,                # 1 - 20 mins
+        60 * 60,                # 2 - 1 hr
+        60 * 60 * 9,            # 3 - 9 hrs
+        60 * 60 * 24,           # 4 - next day
+        60 * 60 * 24 * 2,       # 5 - 2 days
+        60 * 60 * 24 * 6,       # 6 - 6 days
+        60 * 60 * 24 * 14,      # 7 - 2 weeks
+        60 * 60 * 24 * 30,      # 8 - 1 month
+        60 * 60 * 24 * 30 * 2,  # 9 - 2 months
+        60 * 60 * 24 * 30 * 6,  # 10 - 6 months
+        )
+
+
+async def get_new_id():
+    last_id = 0
+    async with aiosqlite.connect('flashcards.db') as db:
+        await db.execute('create table if not exists flashcards (id int, front mediumtext, back mediumtext, lvl int, timestamp int)')
+        await db.commit()
+        async with db.execute('select MAX(id) from flashcards') as cursor:
+            async for row in cursor:
+                last_id = row[0]
+    if type(last_id) != int:
+        return 0
+    else:
+        return last_id + 1
+
+async def get_table():
+    async with aiosqlite.connect('flashcards.db') as db:
+        async with db.execute('select * from flashcards') as cursor:
+            async for row in cursor:
+                print(row)
+
+# TODO: add support for all special symbols. Currently it gives syntax error if all special symbols are entered.
+async def add_card():
+    print('front: ')
+    front = input()
+    if front == 'q':
+        return False
+    print('back: ')
+    back = input()
+    print('---')
+    card = {
+            'id': await get_new_id(),
+            'front': front, 'back': back,
+            'lvl': 0,
+            'timestamp': int(time.time())
+            }
+    async with aiosqlite.connect('flashcards.db') as db:
+        await db.execute(
+                f"insert into flashcards(id, front, back, lvl, timestamp) values ({card['id']}, '{card['front']}', '{card['back']}', {card['lvl']}, {card['timestamp']})"
+                   )
+        await db.commit()
+    return True
+
+async def get_active_cards():
+    cards = []
+    now = time.time()
+    async with aiosqlite.connect('flashcards.db') as db:
+        async with db.execute('select * from flashcards') as cursor:
+            async for row in cursor:
+                card = {
+                        'id': row[0],
+                        'front': row[1],
+                        'back': row[2],
+                        'lvl': row[3],
+                        'timestamp': row[4]
+                        }
+                if now - card['timestamp'] > lvl[card['lvl']]:
+                    cards.append(card)
+    return cards
+
+def erase_line():
+    print("\033[A\033[2K\033[A")    # erase current line: [A cursor up, [2K erase whole line
+
+async def memorize(cards):
+    for card in cards:
+        print(card["front"])
+        front = True
+        should_break = False
+        while True:
+            user_input = click.getchar()
+            erase_line()
+            if user_input == 'f':
+                if front:
+                    print(card["back"])
+                    front = False
+                else:
+                    print(card["front"])
+                    front = True
+            elif user_input == 'y':
+                card["lvl"] += 1
+                break
+            elif user_input == 'n':
+                card["lvl"] = 0
+                break
+            else:
+                should_break = True
+                break
+        if should_break:
+            break
+    return cards
+
+async def update_db(cards):
+    async with aiosqlite.connect('flashcards.db') as db:
+        for row in cards:
+            await db.execute(
+                    f'update flashcards set lvl = {row['lvl']} where id = "{row['id']}"')
+            await db.commit()
+
+async def main():
+    if len(sys.argv) >= 2 and sys.argv[1] == 'add':
+        while await add_card():
+            pass
+    elif len(sys.argv) >= 2 and sys.argv[1] == 'list':
+        await get_table()
+    else:
+        cards = await get_active_cards()
+        cards = await memorize(cards)
+        await update_db(cards)
+
+if __name__ == '__main__':
+    asyncio.run(main())
