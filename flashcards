@@ -5,6 +5,9 @@ import asyncio
 import time
 import click
 import sys
+import os
+
+home_dir = os.environ["HOME"]
 
 lvl = (
         0,                      # 0 - immediately
@@ -20,10 +23,9 @@ lvl = (
         60 * 60 * 24 * 30 * 6,  # 10 - 6 months
         )
 
-
 async def get_new_id():
     last_id = 0
-    async with aiosqlite.connect('flashcards.db') as db:
+    async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         await db.execute('create table if not exists flashcards (id int, front mediumtext, back mediumtext, lvl int, timestamp int)')
         await db.commit()
         async with db.execute('select MAX(id) from flashcards') as cursor:
@@ -35,7 +37,7 @@ async def get_new_id():
         return last_id + 1
 
 async def get_table():
-    async with aiosqlite.connect('flashcards.db') as db:
+    async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         async with db.execute('select * from flashcards') as cursor:
             async for row in cursor:
                 print(row)
@@ -55,7 +57,7 @@ async def add_card():
             'lvl': 0,
             'timestamp': int(time.time())
             }
-    async with aiosqlite.connect('flashcards.db') as db:
+    async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         await db.execute(
                 f"insert into flashcards(id, front, back, lvl, timestamp) values ({card['id']}, '{card['front']}', '{card['back']}', {card['lvl']}, {card['timestamp']})"
                    )
@@ -65,7 +67,7 @@ async def add_card():
 async def get_active_cards():
     cards = []
     now = time.time()
-    async with aiosqlite.connect('flashcards.db') as db:
+    async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         async with db.execute('select * from flashcards') as cursor:
             async for row in cursor:
                 card = {
@@ -111,7 +113,7 @@ async def memorize(cards):
     return cards
 
 async def update_db(cards):
-    async with aiosqlite.connect('flashcards.db') as db:
+    async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         for row in cards:
             await db.execute(
                     f'update flashcards set lvl = {row['lvl']} where id = "{row['id']}"')
