@@ -27,12 +27,17 @@ lvl = (
 async def get_new_id():
     last_id = 0
     async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
-        await db.execute('create table if not exists flashcards (id int, front mediumtext, back mediumtext, lvl int, timestamp int)')
+        await db.execute('create table if not exists flashcards (id int, front mediumtext, back mediumtext, lvl int, tags, timestamp int)')
         await db.commit()
         async with db.execute('select MAX(id) from flashcards') as cursor:
             async for row in cursor:
                 last_id = row[0]
     if type(last_id) != int:
+        async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
+            await db.execute(f'insert into flashcards(id, front, back, lvl, tags, timestamp) values (-2, "meta", "enabled", 11, json("[]"), {time.time()})')
+            await db.commit()
+            await db.execute(f'insert into flashcards(id, front, back, lvl, tags, timestamp) values (-1, "meta", "disabled", 11, json("[]"), {time.time()})')
+            await db.commit()
         return 0
     else:
         return last_id + 1
@@ -60,8 +65,9 @@ async def add_card():
             }
     async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         await db.execute(
-                f"insert into flashcards(id, front, back, lvl, timestamp) values ({card['id']}, '{card['front']}', '{card['back']}', {card['lvl']}, {card['timestamp']})"
+                f"""insert into flashcards(id, front, back, lvl, tags, timestamp) values ({card['id']}, '{card['front']}', '{card['back']}', {card['lvl']}, json('["{card['front']}"]'), {card['timestamp']})"""
                    )
+        # select front,back from flashcards, json_each(tags) where json_each.value='second one';
         await db.commit()
     return True
 
@@ -124,8 +130,8 @@ async def main():
     if len(sys.argv) >= 2 and sys.argv[1] == 'a':
         while await add_card():
             pass
-    #elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
-        #await get_table()  # for developers. The learner doesn't want to have this function available
+    elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
+        await get_table()  # for developers. The learner doesn't want to have this function available
     else:
         cards = await get_active_cards()
         cards = await memorize(cards)
