@@ -73,7 +73,7 @@ async def add_card():
 
 async def get_active_cards():
     cards = []
-    now = time.time()
+    now = int(time.time())
     async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
         async with db.execute('select * from flashcards') as cursor:
             async for row in cursor:
@@ -82,7 +82,8 @@ async def get_active_cards():
                         'front': row[1],
                         'back': row[2],
                         'lvl': row[3],
-                        'timestamp': row[4]
+                        'tags': row[4],
+                        'timestamp': row[5]
                         }
                 if now - card['timestamp'] > lvl[card['lvl']]:
                     cards.append(card)
@@ -126,12 +127,36 @@ async def update_db(cards):
                     f'update flashcards set lvl = {row['lvl']} where id = "{row['id']}"')
             await db.commit()
 
+async def delete_card(card):
+    pass
+
+async def add_tag(card):
+    pass
+
+async def del_tag(card):
+    pass
+
+async def list_tags(card):
+    pass
+
+async def disable_tag():
+    pass
+
+async def enable_tag():
+    pass
+
+async def list_all_tags():
+    pass
+
+async def list_by_tag():
+    pass
+
 async def main():
     if len(sys.argv) >= 2 and sys.argv[1] == 'a':
         while await add_card():
             pass
-    elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
-        await get_table()  # for developers. The learner doesn't want to have this function available
+    #elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
+        #await get_table()  # for developers. The learner doesn't want to have this function available
     else:
         cards = await get_active_cards()
         cards = await memorize(cards)
