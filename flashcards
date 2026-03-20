@@ -93,6 +93,7 @@ def erase_line():
     print("\033[A\033[2K\033[A")    # erase current line: [A cursor up, [2K erase whole line
 
 async def memorize(cards):
+    now = int(time.time())
     for card in cards:
         print(card["front"])
         front = True
@@ -108,7 +109,8 @@ async def memorize(cards):
                     print(card["front"])
                     front = True
             elif user_input == 'y':
-                card["lvl"] += 1
+                while lvl[card["lvl"]] < now - card["timestamp"]:
+                    card["lvl"] += 1
                 break
             elif user_input == 'n':
                 card["lvl"] = 0
@@ -116,6 +118,7 @@ async def memorize(cards):
             else:
                 should_break = True
                 break
+        card["timestamp"] = now
         if should_break:
             break
     return cards
