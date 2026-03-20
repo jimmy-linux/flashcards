@@ -94,10 +94,10 @@ def erase_line():
 
 async def memorize(cards):
     now = int(time.time())
+    should_exit = False
     for card in cards:
         print(card["front"])
         front = True
-        should_break = False
         while True:
             user_input = click.getchar()
             erase_line()
@@ -116,11 +116,14 @@ async def memorize(cards):
                 card["lvl"] = 0
                 break
             else:
-                should_break = True
+                should_exit = True
                 break
         card["timestamp"] = now
-        if should_break:
+        if should_exit:
             break
+    await update_db(cards)
+    if should_exit:
+        exit()
     return cards
 
 async def update_db(cards):
@@ -161,9 +164,11 @@ async def main():
     #elif len(sys.argv) >= 2 and sys.argv[1] == 'l':
         #await get_table()  # for developers. The learner doesn't want to have this function available
     else:
-        cards = await get_active_cards()
-        cards = await memorize(cards)
-        await update_db(cards)
+        while True:
+            cards = await get_active_cards()
+            if not len(cards):
+                break
+            cards = await memorize(cards)
 
 if __name__ == '__main__':
     asyncio.run(main())
