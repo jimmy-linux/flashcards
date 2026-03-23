@@ -85,7 +85,7 @@ async def get_active_cards():
                         'tags': row[4],
                         'timestamp': row[5]
                         }
-                if now - card['timestamp'] > lvl[card['lvl']]:
+                if now - card['timestamp'] >= lvl[card['lvl']]:
                     cards.append(card)
     return cards
 
@@ -136,6 +136,15 @@ async def update_db(cards):
         for row in cards:
             await db.execute(
                     f'update flashcards set lvl = {row['lvl']} where id = "{row['id']}"')
+            await db.commit()
+            await db.execute(
+                    f'update flashcards set timestamp = {row['timestamp']} where id = "{row['id']}"')
+            await db.commit()
+            await db.execute(
+                    f"""update flashcards set tags = '{row["tags"]}' where id = '{row["id"]}'""")
+            await db.commit()
+            await db.execute(
+                    f"""update flashcards set back = '{row["back"]}' where id = '{row["id"]}'""")
             await db.commit()
 
 async def delete_card(card):
