@@ -108,6 +108,10 @@ async def memorize(cards):
                 else:
                     print(card["front"])
                     front = True
+            elif user_input == 'd':
+                await delete_card(card)
+                cards.remove(card)
+                break
             elif user_input == 'y':
                 while lvl[card["lvl"]] < now - card["timestamp"]:
                     card["lvl"] += 1
@@ -134,7 +138,10 @@ async def update_db(cards):
             await db.commit()
 
 async def delete_card(card):
-    pass
+    async with aiosqlite.connect(f'{home_dir}/.cache/fls/flashcards.db') as db:
+        await db.execute(
+                f'delete from flashcards where id = "{card['id']}"')
+        await db.commit()
 
 async def add_tag(card):
     pass
