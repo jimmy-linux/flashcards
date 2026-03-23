@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-
 import aiosqlite
 import asyncio
-import time
+import random
 import click
+import time
 import sys
 import os
 
@@ -95,6 +95,7 @@ def erase_line():
 async def memorize(cards):
     now = int(time.time())
     should_exit = False
+    random.shuffle(cards)
     for card in cards:
         print(card["front"])
         front = True
