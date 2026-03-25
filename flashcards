@@ -90,7 +90,8 @@ async def get_active_cards():
     return cards
 
 def erase_line():
-    print("\033[A\033[2K\033[A")    # erase current line: [A cursor up, [2K erase whole line
+    #print("\033[A\033[2K\033[A")    # erase current line: [A cursor up, [2K erase whole line
+    print("\033[2J")
 
 async def memorize(cards):
     now = int(time.time())
